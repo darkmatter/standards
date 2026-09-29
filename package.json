@@ -1,0 +1,13 @@
+{
+  "name": "standards",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@effect/platform-node": "4.0.0-rc.117",
+    "alchemy": "2.0.0-beta.79",
+    "effect": "4.0.0-rc.117"
+  },
+  "overrides": {
+    "@effect/platform-node-shared": "4.0.0-rc.117"
+  }
+}
