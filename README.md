@@ -41,3 +41,18 @@ git remote add origin git@github.com:darkmatter/standards.git && git push -u ori
 ```
 
 Deploying again updates the secret, as after rotating the key.
+
+<!-- adhere:rules:start -->
+**Rules**
+
+- [`ci/use-self-hosted-runners`](./.adhere/rules/ci/use-self-hosted-runners/RULE.md): A workflow job must run on a self-hosted runner label (linux, macos, arc, arc-dind, kvm, or arc-kvm), never on a GitHub-hosted runner such as ubuntu-latest.
+- [`design/no-speculative-edge-cases`](./.adhere/rules/design/no-speculative-edge-cases/RULE.md): Code should handle only the cases its real inputs produce, and should not handle edge cases those inputs do not produce, such as unused corners of a format or a recheck of what the program's own code already guarantees.
+
+**Lint settings**
+
+- None.
+
+**Custom lint plugins**
+
+- None.
+<!-- adhere:rules:end -->
