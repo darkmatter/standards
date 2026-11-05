@@ -67,7 +67,9 @@ Deploying again updates the secret, as after rotating the key.
 <a id="adhere-rule-ci-use-self-hosted-runners"></a>
 
 <details>
-<summary><strong>A workflow job must run on a self-hosted runner label (linux, macos, arc, arc-dind, kvm, or arc-kvm), never on a GitHub-hosted runner such as ubuntu-latest.</strong> <code>ci/use-self-hosted-runners</code></summary>
+<summary><h2><code>ci/use-self-hosted-runners</code></h2></summary>
+
+A workflow job must run on a self-hosted runner label (linux, macos, arc, arc-dind, kvm, or arc-kvm), never on a GitHub-hosted runner such as ubuntu-latest.
 
 The organization runs its own runners, labeled `linux`, `macos`, `arc`,
 `arc-dind`, `kvm`, and `arc-kvm`. A job's `runs-on` names one of them, alone or
@@ -116,7 +118,9 @@ Source: [`ci/use-self-hosted-runners`](./.adhere/rules/ci/use-self-hosted-runner
 <a id="adhere-rule-design-effect-declare-dependencies"></a>
 
 <details>
-<summary><strong>Effect code must take each dependency from the context, yielding its service or <code>Config</code> inside an effect or layer, and must never read it from a global such as <code>globalThis</code> or <code>process</code>, capture it from module scope, or close over it in a function that returns a service class.</strong> <code>design/effect-declare-dependencies</code></summary>
+<summary><h2><code>design/effect-declare-dependencies</code></h2></summary>
+
+Effect code must take each dependency from the context, yielding its service or <code>Config</code> inside an effect or layer, and must never read it from a global such as <code>globalThis</code> or <code>process</code>, capture it from module scope, or close over it in a function that returns a service class.
 
 A dependency is anything the code needs from outside itself. That includes the runtime (`globalThis.Bun`, `process.env`, `process.platform`, `process.stderr`), the clock, the file system, configuration, and other services. Code in an `Effect.gen` gets a dependency by yielding its service, or by reading configuration through `Config`. Then the type names the dependency, a layer supplies it, and a test can swap it. Reading a global inside Effect code hides the dependency, and so does capturing a module-scope value built from one.
 
@@ -167,7 +171,9 @@ Source: [`design/effect-declare-dependencies`](./.adhere/rules/design/effect-dec
 <a id="adhere-rule-design-no-speculative-edge-cases"></a>
 
 <details>
-<summary><strong>Code should handle only the cases its real inputs produce, and should not handle edge cases those inputs do not produce, such as unused corners of a format or a recheck of what the program's own code already guarantees.</strong> <code>design/no-speculative-edge-cases</code></summary>
+<summary><h2><code>design/no-speculative-edge-cases</code></h2></summary>
+
+Code should handle only the cases its real inputs produce, and should not handle edge cases those inputs do not produce, such as unused corners of a format or a recheck of what the program's own code already guarantees.
 
 Every branch for a case that does not happen is code someone has to read, test,
 and keep working, and it hides which cases matter. Leaving the case out costs
