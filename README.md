@@ -51,7 +51,7 @@ Deploying again updates the secret, as after rotating the key.
   - [`ci`](#adhere-topic-ci)
     - [`ci/use-self-hosted-runners`](#adhere-rule-ci-use-self-hosted-runners)
   - [`design`](#adhere-topic-design)
-    - [`design/effect-declare-dependencies`](#adhere-rule-design-effect-declare-dependencies)
+    - [`design/effect-declared-dependencies`](#adhere-rule-design-effect-declared-dependencies)
     - [`design/no-speculative-edge-cases`](#adhere-rule-design-no-speculative-edge-cases)
 - [Lint settings](#adhere-lint-settings)
 - [Custom lint plugins](#adhere-custom-lint-plugins)
@@ -113,22 +113,29 @@ Source: [`ci/use-self-hosted-runners`](./.adhere/rules/ci/use-self-hosted-runner
 
 #### design
 
-<a id="adhere-rule-design-effect-declare-dependencies"></a>
+<a id="adhere-rule-design-effect-declared-dependencies"></a>
 
 <details>
-<summary><strong>Effect code must take each dependency from the context, yielding its service or <code>Config</code> inside an effect or layer, and must never read it from a global such as <code>globalThis</code> or <code>process</code>, capture it from module scope, or close over it in a function that returns a service class.</strong> <code>design/effect-declare-dependencies</code></summary>
+<summary><strong>Effect code must obtain each dependency from its context, as a yielded service, <code>Config</code>, or platform service, and must never read it from <code>process</code>, <code>globalThis</code>, or module scope, take a service or <code>Context</code> as a parameter, or create a service class inside a function.</strong> <code>design/effect-declared-dependencies</code></summary>
 
-A dependency is anything the code needs from outside itself. That includes the runtime (`globalThis.Bun`, `process.env`, `process.platform`, `process.stderr`), the clock, the file system, configuration, and other services. Code in an `Effect.gen` gets a dependency by yielding its service, or by reading configuration through `Config`. Then the type names the dependency, a layer supplies it, and a test can swap it. Reading a global inside Effect code hides the dependency, and so does capturing a module-scope value built from one.
+A dependency that comes from the context appears in the Effect's requirements type. A layer can then replace it in tests or at the entry point. A dependency read from `process` or module scope, or passed in by hand, is hidden from that type, and nothing can substitute it.
 
-Effect code means an `Effect.gen`, a layer, or a function that returns an Effect. It also covers the callbacks it runs and the helpers it calls. So a module-scope helper such as `const columns = () => process.stderr.columns`, when an `Effect.gen` calls it, breaks the rule. A script that runs an Effect program is held to the same standard: a `process.env` read at module scope that the program captures breaks the rule.
+Effect code here is a generator passed to `Effect.gen` or `Effect.fn`, a layer, or a function that returns an Effect. It also includes any module-scope value or helper that such code in the same file reads.
 
-Reading `process.env` through `Config` follows the rule, and reading it directly breaks it. A module-scope constant that is not a dependency, such as a literal, a schema, or a service tag, follows the rule.
+This rule covers these cases:
 
-The rule is about how Effect code gets a dependency, not about how a dependency gets built. Code that no effect reads is outside the rule, even when it reads a global: a plain async function, a promise-based provider's `ask`, or a module-scope value that only plain calls use. Code that wraps a global to pass it in as an argument also follows the rule, for example a `fetch` handed over as `jev({ fetch: wire })` that calls `globalThis.fetch`, because the call that receives it names it.
+- Reading `process.env` instead of `Config`. Reading `process.cwd()`, `process.platform`, `process.stderr.columns`, or `globalThis` instead of using a platform service such as `Path` or `Terminal`. Each of these breaks the rule inside a service, layer, or workflow, including as a fallback such as `options.root ?? process.cwd()`. It also breaks the rule in a module-scope value or helper that Effect code in the file reads, such as `const columns = () => process.stderr.columns ?? 80`.
+- A function that takes a service implementation (`SourceWalker["Service"]`, `FileSystem.FileSystem`) or a `Context.Context<...>` as a parameter and provides or calls it. It should yield the service instead and keep it in its requirements.
+- A function that defines and returns a service class, such as `const make = (args) => class Service extends Context.Service<...>()(...)`. A service is declared once, at module scope.
 
-A function that takes arguments and returns a `Layer`, such as `SourceWalkerLive(filter, roots)`, follows the rule. Its service tag stays fixed, and its layer still yields every dependency. A function that returns a service class breaks the rule, for example `const make = (args) => class Service extends ...`. Each call creates a new tag, and the service's dependencies stay in the closure, where the context cannot see them.
+These do not break the rule:
 
-<a id="adhere-heading-design-effect-declare-dependencies-must"></a>
+- A function that takes plain values, such as a path, and returns a layer for a service declared at module scope, such as `(base?: string) => Layer.effect(AuditCache)(...)`.
+- Constants, schemas, and pure functions imported or declared at module scope. These are not dependencies.
+- A plain function that returns a value or a Promise rather than an Effect, when no Effect code in its file calls it, such as `post(name, url, headers, body, signal, fetch = globalThis.fetch)`. A file that imports only `Schema` from `effect` may hold no Effect code at all.
+- The program's entry point, where the layers are assembled. A file that passes its main Effect to `BunRuntime.runMain` is one, whether it is the CLI or a script. It may read the process anywhere in that file. That includes module scope, such as `` const platform = `${process.platform}-${process.arch}` ``, and a layer built there, such as one checking `process.stderr.isTTY`. Its functions still must not take a service or a `Context` as a parameter.
+
+<a id="adhere-heading-design-effect-declared-dependencies-must"></a>
 
 ##### Must
 
@@ -145,22 +152,19 @@ export const JevLive = Layer.effect(Jev)(
 );
 ```
 
-<a id="adhere-heading-design-effect-declare-dependencies-never"></a>
+<a id="adhere-heading-design-effect-declared-dependencies-never"></a>
 
 ##### Never
 
 ```ts
-const load = yield* Effect.cached(
-  attempt(async () => {
-    const bun = (globalThis as { Bun?: { isStandaloneExecutable?: boolean } }).Bun;
-    let manifest = process.env.ADHERE_TYPESCRIPT_PACKAGE;
-    const expected = `@typescript/typescript-${process.platform}-${process.arch}`;
-    if (!manifest && bun?.isStandaloneExecutable) throw new Error("This raw executable has no installed compiler.");
-  }),
-);
+Effect.gen(function* () {
+  const walker = yield* SourceWalker;
+  const files = yield* walker.files;
+  const root = options.root ?? process.cwd();
+});
 ```
 
-Source: [`design/effect-declare-dependencies`](./.adhere/rules/design/effect-declare-dependencies/RULE.md).
+Source: [`design/effect-declared-dependencies`](./.adhere/rules/design/effect-declared-dependencies/RULE.md).
 
 </details>
 
