@@ -43,6 +43,7 @@ git remote add origin git@github.com:darkmatter/standards.git && git push -u ori
 Deploying again updates the secret, as after rotating the key.
 
 <!-- adhere:rules:start -->
+
 <a id="adhere-contents"></a>
 
 ### Contents
@@ -324,3 +325,9 @@ Source: [`style/one-idea-per-line`](./.adhere/rules/style/one-idea-per-line/RULE
 
 **[↑ Back to contents](#adhere-contents)**
 <!-- adhere:rules:end -->
+
+## Shared CI checks
+
+[Story coverage](actions/story-coverage/README.md) provides a reusable action for
+new React component exports and existing story coverage. Consumers pin a reviewed
+commit and opt in through their CI configuration before making the check required.
