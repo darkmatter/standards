@@ -1,0 +1,35 @@
+name: Story coverage
+description: Require stories for newly exported React UI and preserve established coverage
+inputs:
+  base:
+    description: Full PR base SHA (the check computes its merge base with head)
+    required: true
+  head:
+    description: Commit to check
+    default: HEAD
+  config:
+    description: Repository-relative JSON policy file
+    default: .storybook-coverage.json
+  repository:
+    description: Checked-out repository directory with base and head history
+    default: .
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v6
+      with:
+        node-version: "24"
+    - name: Install the pinned source parser
+      shell: bash
+      env:
+        ACTION_DIRECTORY: ${{ github.action_path }}
+      run: npm ci --ignore-scripts --no-audit --no-fund --prefix "$ACTION_DIRECTORY"
+    - name: Check story coverage
+      shell: bash
+      env:
+        ACTION_DIRECTORY: ${{ github.action_path }}
+        COVERAGE_BASE: ${{ inputs.base }}
+        COVERAGE_HEAD: ${{ inputs.head }}
+        COVERAGE_CONFIG: ${{ inputs.config }}
+        COVERAGE_REPOSITORY: ${{ inputs.repository }}
+      run: node "$ACTION_DIRECTORY/check.mjs"
